@@ -4,6 +4,7 @@ import { authApi } from '@/Apis/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageRoute } from '@/enums/pageRoute.enum';
+import { setUser } from '@/helpers/user.helper';
 import { LoginResponse } from '@/types/login.types';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
@@ -87,7 +88,7 @@ export default function RegisterPage() {
             if (accessToken && refreshToken) {
                 localStorage.setItem('accessToken', accessToken);
                 localStorage.setItem('refreshToken', refreshToken);
-
+                setUser(response.user);
                 toast.success('Registration successful');
                 router.push(PageRoute.DASHBOARD);
             }
