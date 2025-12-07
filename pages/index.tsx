@@ -19,7 +19,7 @@ export default function HomePage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
             <div className="text-center space-y-6">
-                <h1 className="text-4xl font-bold text-gray-900">Welcome</h1>
+                <h1 className="text-4xl font-bold text-gray-900">Welcome to the AI Content Studio</h1>
                 <p className="text-lg text-gray-600">Get started by logging in or creating an account</p>
                 <div className="flex gap-4 justify-center">
                     <Link href={PageRoute.LOGIN}>
