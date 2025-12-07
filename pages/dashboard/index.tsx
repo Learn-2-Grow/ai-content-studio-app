@@ -2,7 +2,9 @@
 
 import { threadsApi } from '@/Apis/threads';
 import PageHeader from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageRoute } from '@/enums/pageRoute.enum';
 import { ContentStatus, Thread, ThreadsSummaryResponse } from '@/types/thread.types';
 import { CheckCircle2, Clock, Loader2, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -147,7 +149,7 @@ export default function DashboardPage() {
                     <div className="space-y-4 grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                         <Card className="h-full flex flex-col justify-between min-h-[100px] py-3">
                             <CardHeader className="">
-                                <CardTitle className="text-base">Total Threads</CardTitle>
+                                <CardTitle className="text-base">Total Contents</CardTitle>
                             </CardHeader>
                             <CardContent className="flex-grow flex items-center pt-0 -mt-5">
                                 <div className="text-3xl font-bold">{stats.total}</div>
@@ -189,8 +191,11 @@ export default function DashboardPage() {
 
                     <div className="lg:col-span-2">
                         <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Recent Threads</CardTitle>
+                            <CardHeader className="flex justify-between items-center">
+                                <CardTitle className="text-sm">Recent Contents</CardTitle>
+                                <Button variant="outline" size="sm" className="text-xs pointer-events-auto cursor-pointer"
+                                    onClick={() => router.push(PageRoute.CREATE_CONTENT)}
+                                >Create New Content</Button>
                             </CardHeader>
                             <CardContent>
                                 {loading ? (

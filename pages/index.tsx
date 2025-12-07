@@ -97,7 +97,7 @@ export default function HomePage() {
                             {/* Total Threads */}
                             <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
                                 <div>
-                                    <p className="text-[11px] text-gray-500">Total Threads</p>
+                                    <p className="text-[11px] text-gray-500">Total Contents</p>
                                     <p className="text-2xl font-semibold text-gray-900">27</p>
                                 </div>
                                 <div className="text-right text-[11px] text-gray-500">
@@ -109,7 +109,7 @@ export default function HomePage() {
                             {/* Recent Threads */}
                             <div className="space-y-2">
                                 <p className="text-[11px] uppercase tracking-wide text-gray-500">
-                                    Recent Threads
+                                    Recent Contents
                                 </p>
 
                                 <div className="space-y-2">
