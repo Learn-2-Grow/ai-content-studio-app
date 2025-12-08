@@ -31,14 +31,72 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     (error) => {
+        // Handle different types of errors
+        let errorMessage = 'An unexpected error occurred';
+
         if (error.response) {
-            console.error('API Error:', error.response.data);
+            // Server responded with error status
+            const status = error.response.status;
+            const data = error.response.data;
+
+            errorMessage = data?.message || data?.error || `Server error (${status})`;
+
+            // Handle specific status codes
+            if (status === 401) {
+                errorMessage = 'Unauthorized. Please login again.';
+                // Optionally clear token and redirect to login
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('accessToken');
+                }
+            } else if (status === 403) {
+                errorMessage = 'Access forbidden. You don\'t have permission.';
+            } else if (status === 404) {
+                errorMessage = 'Resource not found.';
+            } else if (status >= 500) {
+                errorMessage = 'Server error. Please try again later.';
+            }
+
+            console.error('API Error:', {
+                status,
+                data: error.response.data,
+                url: error.config?.url,
+            });
+
+            // Attach user-friendly message to error
+            error.userMessage = errorMessage;
+
         } else if (error.request) {
-            console.error('Network Error:', error.request);
+            // Request was made but no response received
+            if (error.code === 'ECONNABORTED') {
+                errorMessage = 'Request timeout. Please check your connection and try again.';
+            } else if (error.code === 'ERR_NETWORK') {
+                errorMessage = 'Network error. Please check your internet connection.';
+            } else {
+                errorMessage = 'No response from server. Please try again later.';
+            }
+
+            console.error('Network Error:', {
+                code: error.code,
+                message: error.message,
+                url: error.config?.url,
+            });
+
+            // Attach user-friendly message to error
+            error.userMessage = errorMessage;
+
         } else {
-            console.error('Error:', error.message);
+            // Error setting up the request
+            errorMessage = error.message || 'An unexpected error occurred';
+            console.error('Request Setup Error:', error.message);
+            error.userMessage = errorMessage;
         }
-        return Promise.reject(error);
+
+        // Return a normalized error object
+        return Promise.reject({
+            ...error,
+            message: errorMessage,
+            userMessage: errorMessage,
+        });
     }
 );
 

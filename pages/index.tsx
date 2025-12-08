@@ -20,11 +20,19 @@ export default function HomePage() {
     }, [router]);
 
     return (
-        <main className="min-h-screen bg-gray-50 text-gray-900 flex items-center justify-center px-4">
-            <div className="w-full max-w-6xl mx-auto grid gap-12 md:grid-cols-[1.4fr_minmax(0,1fr)] items-center">
+        <main className="min-h-screen text-gray-900 flex flex-col items-center px-4 pt-8 md:pt-20">
+            {/* Title Section */}
+            <div className="text-center mb-12 md:mb-16 w-full">
+                <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-gray-900">
+                    <span className="text-indigo-500">AI</span> Content Studio
+                </h1>
+            </div>
+
+            {/* Main Content */}
+            <div className="w-full max-w-6xl mx-auto grid gap-12 md:grid-cols-[1.4fr_minmax(0,1fr)] items-center justify-items-center">
 
                 {/* Left Section */}
-                <section className="space-y-8">
+                <section className="space-y-8 w-full max-w-xl mx-auto md:mx-0 text-center md:text-left">
                     {/* Badge */}
                     <div className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-600 shadow-sm">
                         <Sparkles className="h-3 w-3 text-sky-500" />
@@ -40,14 +48,14 @@ export default function HomePage() {
                             </span>
                             .
                         </h1>
-                        <p className="text-base md:text-lg text-gray-600 max-w-xl">
+                        <p className="text-base md:text-lg text-gray-600 max-w-xl mx-auto md:mx-0">
                             Create blog posts, outlines, product descriptions, and social captions —
                             powered by async queues, dashboards, and sentiment analysis.
                         </p>
                     </div>
 
                     {/* Buttons */}
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                         <Link href={PageRoute.LOGIN}>
                             <Button size="lg" className="gap-2">
                                 <MessageCircle className="h-4 w-4" />
@@ -62,7 +70,7 @@ export default function HomePage() {
                     </div>
 
                     {/* Feature badges */}
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-500 justify-center md:justify-start">
                         <div className="flex items-center gap-2">
                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
                             Bull Queue + Redis
@@ -79,7 +87,7 @@ export default function HomePage() {
                 </section>
 
                 {/* Right Section → Card preview */}
-                <section className="md:justify-self-end w-full max-w-sm">
+                <section className="md:justify-self-end w-full max-w-sm mx-auto md:mx-0">
                     <Card className="border-gray-200 bg-white shadow-md">
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between text-base">
