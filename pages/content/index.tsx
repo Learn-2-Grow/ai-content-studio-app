@@ -6,30 +6,23 @@ import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ProcessingSparkleIcon } from '@/components/ui/processing-sparkle-icon';
 import appConfig from '@/config/app.config';
+import { ContentType } from '@/enums/content.enum';
 import { PageRoute } from '@/enums/pageRoute.enum';
+import { getContentTypeLabel } from '@/helpers/content.helper';
 import { getUser } from '@/helpers/user.helper';
-import { Content, ThreadDetails } from '@/types/thread.types';
+import { Content, ThreadDetails } from '@/types/thread.interface';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-const typeMap: Record<string, string> = {
-    blog_post: 'Blog Post',
-    product_description: 'Product Description',
-    social_media_caption: 'Social Media Caption',
-    article: 'Article',
-    other: 'Other',
-    blog_outline: 'Blog Outline',
-    social_caption: 'Social Caption',
-};
 
 const contentTypeOptions = [
-    { value: 'blog_post', label: 'Blog Post' },
-    { value: 'product_description', label: 'Product Description' },
-    { value: 'social_media_caption', label: 'Social Media Caption' },
-    { value: 'article', label: 'Article' },
-    { value: 'other', label: 'Other' },
+    { value: ContentType.BLOG_POST, label: getContentTypeLabel(ContentType.BLOG_POST) },
+    { value: ContentType.PRODUCT_DESCRIPTION, label: getContentTypeLabel(ContentType.PRODUCT_DESCRIPTION) },
+    { value: ContentType.SOCIAL_MEDIA_CAPTION, label: getContentTypeLabel(ContentType.SOCIAL_MEDIA_CAPTION) },
+    { value: ContentType.ARTICLE, label: getContentTypeLabel(ContentType.ARTICLE) },
+    { value: ContentType.OTHER, label: getContentTypeLabel(ContentType.OTHER) },
 ];
 
 export default function ContentDetailsPage() {
@@ -43,7 +36,7 @@ export default function ContentDetailsPage() {
     const [loading, setLoading] = useState(!isNewContent);
     const [generating, setGenerating] = useState(false);
     const [prompt, setPrompt] = useState('');
-    const [contentType, setContentType] = useState('blog_post');
+    const [contentType, setContentType] = useState(ContentType.BLOG_POST);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const user = getUser();
@@ -220,14 +213,14 @@ export default function ContentDetailsPage() {
                 {!isNewContent && threadDetails ? (
                     <div className="flex-1">
                         <h1 className="text-sm font-semibold">{threadDetails.title}</h1>
-                        <p className="text-xs text-gray-500">{typeMap[threadDetails.type] || threadDetails.type}</p>
+                        <p className="text-xs text-gray-500">{getContentTypeLabel(threadDetails.type)}</p>
                     </div>
                 ) : (
                     <div className="flex-1 flex items-center gap-2">
                         <span className="text-sm font-semibold">New Conversation</span>
                         <select
                             value={contentType}
-                            onChange={(e) => setContentType(e.target.value)}
+                            onChange={(e) => setContentType(e.target.value as ContentType)}
                             className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
                             {contentTypeOptions.map((option) => (

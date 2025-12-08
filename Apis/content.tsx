@@ -1,5 +1,5 @@
 import axiosInstance from '@/lib/axios';
-import { Thread } from '@/types/thread.types';
+import { Thread } from '@/types/thread.interface';
 
 export const contentEndpoints = {
     generateContent: '/content/generate',

@@ -22,13 +22,6 @@ export interface Thread {
     lastContent?: LastContent;
 }
 
-export enum ContentStatus {
-    PENDING = 'pending',
-    PROCESSING = 'processing',
-    COMPLETED = 'completed',
-    FAILED = 'failed',
-}
-
 export interface ThreadsResponse {
     data: Thread[];
     total: number;
