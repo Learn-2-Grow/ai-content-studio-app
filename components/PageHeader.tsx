@@ -46,10 +46,10 @@ export default function PageHeader() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">
-                        Welcome back, {user?.name || ''}
+                        Welcome back, <span className="text-indigo-500">{user?.name || ''}</span>
 
                     </h1>
-                    <p className="text-sm text-gray-600 mt-1">Overview of your AI-generated content threads</p>
+                    <p className="text-sm text-gray-600 mt-1">Overview of your AI-generated contents</p>
                 </div>
                 <div className="relative" ref={dropdownRef}>
                     <button

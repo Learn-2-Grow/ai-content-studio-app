@@ -5,8 +5,10 @@ import '../styles/globals.css';
 export default function App({ Component, pageProps }: AppProps) {
     return (
         <>
-            <Component {...pageProps} />
-            <Toaster />
+            <div className='max-w-7xl mx-auto bg-white p-2'>
+                <Component {...pageProps} />
+                <Toaster />
+            </div>
         </>
     );
 }

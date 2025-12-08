@@ -1,10 +1,11 @@
 import axiosInstance from '@/lib/axios';
-import { ThreadsResponse, ThreadsSummaryResponse } from '@/types/thread.types';
+import { ThreadDetails, ThreadsResponse, ThreadsSummaryResponse } from '@/types/thread.types';
 
 // API endpoint paths
 export const threadEndpoints = {
     getThreads: '/threads',
     getSummary: '/threads/summary',
+    getThreadDetails: (threadId: string) => `/threads/${threadId}`,
 };
 
 // Threads API functions
@@ -29,6 +30,11 @@ export const threadsApi = {
      */
     getSummary: async (): Promise<ThreadsSummaryResponse> => {
         const response = await axiosInstance.get<ThreadsSummaryResponse>(threadEndpoints.getSummary);
+        return response.data;
+    },
+
+    getThreadDetails: async (threadId: string): Promise<ThreadDetails> => {
+        const response = await axiosInstance.get<ThreadDetails>(threadEndpoints.getThreadDetails(threadId));
         return response.data;
     },
 };

@@ -3,4 +3,5 @@ export enum PageRoute {
     REGISTER = '/register',
     DASHBOARD = '/dashboard',
     CREATE_CONTENT = '/create-content',
+    CONTENT_DETAILS = '/content',
 }
