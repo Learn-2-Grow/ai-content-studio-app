@@ -6,11 +6,11 @@ import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ProcessingSparkleIcon } from '@/components/ui/processing-sparkle-icon';
 import appConfig from '@/config/app.config';
-import { PageRoute } from '@/enums/pageRoute.enum';
-import { getUser } from '@/helpers/user.helper';
 import { ContentType } from '@/enums/content.enum';
-import { Content, ThreadDetails } from '@/types/thread.interface';
+import { PageRoute } from '@/enums/pageRoute.enum';
 import { getContentTypeLabel } from '@/helpers/content.helper';
+import { getUser } from '@/helpers/user.helper';
+import { Content, ThreadDetails } from '@/types/thread.interface';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -220,7 +220,7 @@ export default function ContentDetailsPage() {
                         <span className="text-sm font-semibold">New Conversation</span>
                         <select
                             value={contentType}
-                            onChange={(e) => setContentType(e.target.value)}
+                            onChange={(e) => setContentType(e.target.value as ContentType)}
                             className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
                             {contentTypeOptions.map((option) => (
