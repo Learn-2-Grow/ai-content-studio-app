@@ -5,7 +5,9 @@ import { threadsApi } from '@/Apis/threads';
 import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ProcessingSparkleIcon } from '@/components/ui/processing-sparkle-icon';
+import appConfig from '@/config/app.config';
 import { PageRoute } from '@/enums/pageRoute.enum';
+import { getUser } from '@/helpers/user.helper';
 import { Content, ThreadDetails } from '@/types/thread.types';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -44,6 +46,78 @@ export default function ContentDetailsPage() {
     const [contentType, setContentType] = useState('blog_post');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const user = getUser();
+    const [messages, setMessages] = useState([]);
+    const [connected, setConnected] = useState(false);
+
+    useEffect(() => {
+        const url = `${appConfig.ACS_Endpoint}/sse/stream?userId=${encodeURIComponent(user?._id || '')}`;
+        // send access token in the headers
+        const es = new EventSource(url);
+
+        es.onopen = () => {
+            setConnected(true);
+            console.log('SSE connected');
+        };
+
+        es.onmessage = (ev) => {
+            try {
+                try {
+                    const parsedContent: Content = JSON.parse(ev.data);
+                    console.log("SSE message", parsedContent);
+
+                    const contentId = parsedContent?._id ?? null;
+                    const contentStatus = parsedContent?.status ?? null;
+                    const generatedContent = parsedContent?.generatedContent ?? null;
+
+                    console.log({
+                        contentId,
+                        contentStatus,
+                        generatedContent
+                    })
+
+                    if (!contentId || !contentStatus || !generatedContent) {
+                        // Handle error if any required field is missing
+                        console.warn("SSE message missing required fields", parsedContent);
+                        return;
+                    }
+
+                    setContents(prevContents => {
+                        const contentIndex = prevContents.findIndex(c => c._id === contentId);
+                        if (contentIndex === -1) {
+                            // Optionally, handle if the content does not exist (e.g., push new or do nothing)
+                            return prevContents;
+                        }
+                        // Create a shallow copy and update the relevant content
+                        const updatedContents = [...prevContents];
+                        updatedContents[contentIndex] = {
+                            ...updatedContents[contentIndex],
+                            generatedContent,
+                            status: contentStatus
+                        };
+                        return updatedContents;
+                    });
+                } catch (err) {
+                    console.error('Failed to parse SSE data', err);
+                    toast.error('Failed to process streaming content update.');
+                }
+            } catch (err) {
+                console.error('Failed to parse SSE data', err);
+            }
+        };
+
+        es.onerror = (err) => {
+            console.error('SSE error', err);
+            // Optionally close on fatal errors:
+            // es.close();
+            setConnected(false);
+        };
+
+        return () => {
+            es.close();
+            setConnected(false);
+        };
+    }, [user?._id]);
 
     useEffect(() => {
         if (!isNewContent) {
