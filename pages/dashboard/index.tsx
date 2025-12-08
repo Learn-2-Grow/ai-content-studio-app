@@ -4,31 +4,17 @@ import { threadsApi } from '@/Apis/threads';
 import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { ProcessingSparkleIcon } from '@/components/ui/processing-sparkle-icon';
+import { ContentStatus, ContentType, ThreadStatus } from '@/enums/content.enum';
 import { PageRoute } from '@/enums/pageRoute.enum';
-import { ContentStatus, Thread, ThreadsSummaryResponse } from '@/types/thread.types';
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { getContentTypeLabel, getThreadStatusClass, getThreadStatusLabel } from '@/helpers/content.helper';
+import { Thread, ThreadsSummaryResponse } from '@/types/thread.interface';
+import { CheckCircle2, ChevronDown, Clock, Search, X, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 
-const typeMap: Record<string, string> = {
-    blog_post: 'Blog Post',
-    product_description: 'Product Description',
-    social_media_caption: 'Social Media Caption',
-    article: 'Article',
-    other: 'Other',
-    blog_outline: 'Blog Outline',
-    social_caption: 'Social Caption',
-};
-
-const statusMap: Record<string, { label: string; class: string }> = {
-    active: { label: 'Active', class: 'bg-green-50 text-green-700 border-green-200' },
-    completed: { label: 'Completed', class: 'bg-green-50 text-green-700 border-green-200' },
-    pending: { label: 'Pending', class: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-    failed: { label: 'Failed', class: 'bg-red-50 text-red-700 border-red-200' },
-    processing: { label: 'Processing', class: 'bg-blue-50 text-blue-700 border-blue-200' },
-};
 
 const contentStatusMap: Record<string, { label: string; class: string; icon: React.ReactNode }> = {
     [ContentStatus.PENDING]: {
@@ -64,12 +50,44 @@ export default function DashboardPage() {
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedType, setSelectedType] = useState<string>('');
+    const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const pageSize = 10;
+
+    const isInitialMount = useRef(true);
 
     useEffect(() => {
         fetchSummary();
         fetchThreads(true);
+        isInitialMount.current = false;
     }, [router]);
+
+    // Debounce search query
+    useEffect(() => {
+        if (isInitialMount.current) return;
+
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        searchTimeoutRef.current = setTimeout(() => {
+            fetchThreads(true);
+        }, 500);
+
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, [searchQuery]);
+
+    // Reset and fetch when filters change
+    useEffect(() => {
+        if (isInitialMount.current) return;
+        fetchThreads(true);
+    }, [selectedType, selectedStatus]);
 
     const fetchSummary = async () => {
         try {
@@ -95,7 +113,11 @@ export default function DashboardPage() {
             setError(null);
 
             const currentPage = reset ? 1 : page;
-            const response = await threadsApi.getThreads(currentPage, pageSize);
+            const search = searchQuery.trim() || undefined;
+            const type = selectedType || undefined;
+            const status = selectedStatus || undefined;
+
+            const response = await threadsApi.getThreads(currentPage, pageSize, search, type, status);
 
             if (reset) {
                 setThreads(response.data);
@@ -130,6 +152,17 @@ export default function DashboardPage() {
         return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
+    const handleClearFilters = () => {
+        setSearchQuery('');
+        setSelectedType('');
+        setSelectedStatus('');
+    };
+
+    const hasActiveFilters = searchQuery.trim() || selectedType || selectedStatus;
+
+    // Get available types and statuses from summary or threads
+    const availableTypes = summary?.threadsByType ? Object.keys(summary.threadsByType) :
+        Array.from(new Set(threads.map(t => t.type)));
 
     // Use summary data if available, otherwise fallback to calculated stats
     const stats = {
@@ -167,7 +200,7 @@ export default function DashboardPage() {
                             <CardContent className="flex-grow flex flex-col justify-center space-y-2 text-sm pt-0 -mt-5">
                                 {Object.entries(stats.byType).map(([key, value]) => (
                                     <div key={key} className="flex justify-between">
-                                        <span className="text-gray-700">{typeMap[key] || key}</span>
+                                        <span className="text-gray-700">{getContentTypeLabel(key)}</span>
                                         <span className="font-semibold text-purple-400">{value}</span>
                                     </div>
                                 ))}
@@ -184,7 +217,7 @@ export default function DashboardPage() {
                                 ) : (
                                     Object.entries(stats.status).map(([key, value]) => (
                                         <div key={key} className="flex justify-between text-sm">
-                                            <span className="text-gray-700">{statusMap[key]?.label || key.charAt(0).toUpperCase() + key.slice(1)}</span>
+                                            <span className="text-gray-700">{getThreadStatusLabel(key)}</span>
                                             <span className="font-semibold text-green-400">{value}</span>
                                         </div>
                                     ))
@@ -202,6 +235,73 @@ export default function DashboardPage() {
                                 >Create New Content</Button>
                             </CardHeader>
                             <CardContent>
+                                {/* Search and Filter Section */}
+                                <div className="mb-6 space-y-4">
+                                    {/* Search Input */}
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            type="text"
+                                            placeholder="Search by title..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="pl-10 pr-10"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Filter Dropdowns */}
+                                    <div className="flex flex-wrap gap-3 items-center">
+                                        <div className="flex-1 min-w-[150px] relative">
+                                            <select
+                                                value={selectedType}
+                                                onChange={(e) => setSelectedType(e.target.value)}
+                                                className="w-full h-9 rounded-md border border-gray-300 bg-white pl-3 pr-12 py-1 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none"
+                                            >
+                                                <option value="">All Types</option>
+                                                {Object.values(ContentType).map((type: ContentType) => (
+                                                    <option key={type} value={type}>
+                                                        {getContentTypeLabel(type.toString())}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                        </div>
+                                        <div className="flex-1 min-w-[150px] relative">
+                                            <select
+                                                value={selectedStatus}
+                                                onChange={(e) => setSelectedStatus(e.target.value)}
+                                                className="w-full h-9 rounded-md border border-gray-300 bg-white pl-3 pr-12 py-1 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none"
+                                            >
+                                                <option value="">All Statuses</option>
+                                                {Object.values(ThreadStatus).map((status: ThreadStatus) => (
+                                                    <option key={status} value={status}>
+                                                        {getThreadStatusLabel(status.toString())}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                        </div>
+                                        {hasActiveFilters && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleClearFilters}
+                                                className="text-xs border-gray-300 text-gray-700 hover:bg-gray-50"
+                                            >
+                                                <X className="h-3 w-3 mr-1" />
+                                                Clear Filters
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
                                 {loading ? (
                                     <div className="text-center py-8 text-sm text-gray-500">Loading threads...</div>
                                 ) : error ? (
@@ -228,12 +328,12 @@ export default function DashboardPage() {
                                                                 )}
                                                             </div>
                                                             <div className="text-xs text-gray-500 mt-1">
-                                                                {typeMap[thread.type] || thread.type} · {formatDate(thread.createdAt)}
+                                                                {getContentTypeLabel(thread.type)} · {formatDate(thread.createdAt)}
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-3">
-                                                            <span className={`px-2 py-1 rounded-full text-xs border ${statusMap[thread.status]?.class || 'bg-gray-50 text-gray-700'}`}>
-                                                                {statusMap[thread.status]?.label || thread.status}
+                                                            <span className={`px-2 py-1 rounded-full text-xs border ${getThreadStatusClass(thread.status)}`}>
+                                                                {getThreadStatusLabel(thread.status)}
                                                             </span>
                                                             <button
                                                                 onClick={() => router.push(`${PageRoute.CONTENT_DETAILS}?id=${thread._id}`)}
