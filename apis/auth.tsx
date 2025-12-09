@@ -3,6 +3,7 @@ import axiosInstance from '@/lib/axios';
 export const authEndpoints = {
     login: '/auth/login',
     register: '/auth/register',
+    refresh: '/auth/refresh',
 };
 
 export const authApi = {
@@ -19,6 +20,13 @@ export const authApi = {
             name,
             email,
             password,
+        });
+        return response.data;
+    },
+
+    refreshToken: async (refreshToken: string) => {
+        const response = await axiosInstance.post(authEndpoints.refresh, {
+            refreshToken,
         });
         return response.data;
     },
