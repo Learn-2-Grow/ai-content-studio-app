@@ -42,6 +42,8 @@ export interface Content {
     generatedContent: string;
     status: string;
     statusUpdatedAt: string;
+    sentiment?: 'positive' | 'neutral' | 'negative' | null;
+    feedback?: string;
     createdAt: string;
     updatedAt: string;
     __v: number;
