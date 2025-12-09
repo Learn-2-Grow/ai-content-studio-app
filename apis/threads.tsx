@@ -1,23 +1,13 @@
 import axiosInstance from '@/lib/axios';
-import { ThreadDetails, ThreadsResponse, ThreadsSummaryResponse } from '@/types/thread.interface';
+import { ThreadDetails, ThreadsResponse, ThreadsSummaryResponse } from '@/common/interfaces/thread.interface';
 
-// API endpoint paths
 export const threadEndpoints = {
     getThreads: '/threads',
     getSummary: '/threads/summary',
     getThreadDetails: (threadId: string) => `/threads/${threadId}`,
 };
 
-// Threads API functions
 export const threadsApi = {
-    /**
-     * Get threads for the authenticated user with pagination
-     * @param page - Page number (1-indexed)
-     * @param pageSize - Number of threads per page
-     * @param search - Search query to filter threads by title
-     * @param type - Filter threads by type
-     * @param status - Filter threads by status
-     */
     getThreads: async (
         page: number = 1,
         pageSize: number = 5,
@@ -40,9 +30,6 @@ export const threadsApi = {
         return response.data;
     },
 
-    /**
-     * Get threads summary statistics
-     */
     getSummary: async (): Promise<ThreadsSummaryResponse> => {
         const response = await axiosInstance.get<ThreadsSummaryResponse>(threadEndpoints.getSummary);
         return response.data;

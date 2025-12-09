@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
+import { PageRoute } from '@/common/enums/pageRoute.enum';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageRoute } from '@/enums/pageRoute.enum';
 
 export default function HomePage() {
     const router = useRouter();

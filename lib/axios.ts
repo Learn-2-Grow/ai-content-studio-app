@@ -1,101 +1,151 @@
 import appConfig from '@/config/app.config';
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const axiosInstance = axios.create({
     baseURL: appConfig.ACS_Endpoint,
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 10000, // 10 seconds
+    timeout: 10000,
 });
 
-// Request interceptor
+let isRefreshing = false;
+const failedQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(({ resolve, reject }) => {
+        error ? reject(error) : resolve(token!);
+    });
+    failedQueue.length = 0;
+};
+
+const clearAuth = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+};
+
+const getErrorMessage = (status: number): string => {
+    const messages: Record<number, string> = {
+        401: 'Unauthorized. Please login again.',
+        403: 'Access forbidden. You don\'t have permission.',
+        404: 'Resource not found.',
+    };
+    return messages[status] || (status >= 500 ? 'Server error. Please try again later.' : 'An unexpected error occurred');
+};
+
+const handleRefreshToken = async (originalRequest: InternalAxiosRequestConfig & { _retry?: boolean }): Promise<string> => {
+
+    console.log('handleRefreshToken', originalRequest);
+
+    if (isRefreshing) {
+        return new Promise<string>((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+        });
+    }
+
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+        clearAuth();
+        throw new Error('No refresh token available');
+    }
+
+    isRefreshing = true;
+    originalRequest._retry = true;
+
+    try {
+        const response = await axios.post(`${appConfig.ACS_Endpoint}/auth/refresh`, { refreshToken });
+        const responseData = response.data;
+        const newAccessToken = responseData?.tokens?.access || responseData?.accessToken || '';
+        const newRefreshToken = responseData?.tokens?.refresh || responseData?.refreshToken || refreshToken;
+
+        if (!newAccessToken) {
+            throw new Error('No access token in refresh response');
+        }
+
+        localStorage.setItem('accessToken', newAccessToken);
+        if (newRefreshToken !== refreshToken) {
+            localStorage.setItem('refreshToken', newRefreshToken);
+        }
+
+        processQueue(null, newAccessToken);
+        return newAccessToken;
+    } catch (err) {
+        processQueue(err, null);
+        clearAuth();
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login';
+        }
+        throw err;
+    } finally {
+        isRefreshing = false;
+    }
+};
+
 axiosInstance.interceptors.request.use(
     (config) => {
-        // Add auth token if available
-        if (typeof window !== 'undefined') {
-            const accessToken = localStorage.getItem('accessToken');
-            if (accessToken) {
-                config.headers.Authorization = `Bearer ${accessToken}`;
+        if (typeof window !== 'undefined' && !config.url?.includes('/auth/refresh')) {
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
             }
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
 axiosInstance.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    (error) => {
-        // Handle different types of errors
-        let errorMessage = 'An unexpected error occurred';
+    (response) => response,
+    async (error: AxiosError) => {
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const isRefreshRequest = originalRequest?.url?.includes('/auth/refresh');
 
         if (error.response) {
-            // Server responded with error status
-            const status = error.response.status;
-            const data = error.response.data;
+            const { status, data } = error.response;
+            const errorMessage = (data as any)?.message || (data as any)?.error || getErrorMessage(status);
 
-            errorMessage = data?.message || data?.error || `Server error (${status})`;
-
-            // Handle specific status codes
-            if (status === 401) {
-                errorMessage = 'Unauthorized. Please login again.';
-                // Optionally clear token and redirect to login
-                if (typeof window !== 'undefined') {
-                    localStorage.removeItem('accessToken');
+            if (status === 401 && originalRequest && !originalRequest._retry && !isRefreshRequest) {
+                if (typeof window === 'undefined') {
+                    return Promise.reject(error);
                 }
-            } else if (status === 403) {
-                errorMessage = 'Access forbidden. You don\'t have permission.';
-            } else if (status === 404) {
-                errorMessage = 'Resource not found.';
-            } else if (status >= 500) {
-                errorMessage = 'Server error. Please try again later.';
+
+                try {
+                    const newToken = await handleRefreshToken(originalRequest);
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    return axiosInstance(originalRequest);
+                } catch (refreshError) {
+                    return Promise.reject({
+                        ...error,
+                        message: 'Session expired. Please login again.',
+                        userMessage: 'Session expired. Please login again.',
+                    });
+                }
             }
 
-            console.error('API Error:', {
-                status,
-                data: error.response.data,
-                url: error.config?.url,
-            });
+            if (status === 401) {
+                clearAuth();
+            }
 
-            // Attach user-friendly message to error
-            error.userMessage = errorMessage;
-
+            console.error('API Error:', { status, data, url: originalRequest?.url });
+            (error as any).userMessage = errorMessage;
         } else if (error.request) {
-            // Request was made but no response received
-            if (error.code === 'ECONNABORTED') {
-                errorMessage = 'Request timeout. Please check your connection and try again.';
-            } else if (error.code === 'ERR_NETWORK') {
-                errorMessage = 'Network error. Please check your internet connection.';
-            } else {
-                errorMessage = 'No response from server. Please try again later.';
-            }
-
-            console.error('Network Error:', {
-                code: error.code,
-                message: error.message,
-                url: error.config?.url,
-            });
-
-            // Attach user-friendly message to error
-            error.userMessage = errorMessage;
-
+            const networkMessages: Record<string, string> = {
+                ECONNABORTED: 'Request timeout. Please check your connection and try again.',
+                ERR_NETWORK: 'Network error. Please check your internet connection.',
+            };
+            const errorMessage = networkMessages[error.code || ''] || 'No response from server. Please try again later.';
+            console.error('Network Error:', { code: error.code, message: error.message, url: originalRequest?.url });
+            (error as any).userMessage = errorMessage;
         } else {
-            // Error setting up the request
-            errorMessage = error.message || 'An unexpected error occurred';
+            const errorMessage = error.message || 'An unexpected error occurred';
             console.error('Request Setup Error:', error.message);
-            error.userMessage = errorMessage;
+            (error as any).userMessage = errorMessage;
         }
 
-        // Return a normalized error object
         return Promise.reject({
             ...error,
-            message: errorMessage,
-            userMessage: errorMessage,
+            message: (error as any).userMessage,
+            userMessage: (error as any).userMessage,
         });
     }
 );

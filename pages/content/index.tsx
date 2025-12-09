@@ -1,16 +1,16 @@
 'use client';
 
-import { contentApi } from '@/Apis/content';
-import { threadsApi } from '@/Apis/threads';
+import { contentApi } from '@/apis/content';
+import { threadsApi } from '@/apis/threads';
+import { ContentType } from '@/common/enums/content.enum';
+import { PageRoute } from '@/common/enums/pageRoute.enum';
+import { getContentTypeLabel } from '@/common/helpers/content.helper';
+import { getUser } from '@/common/helpers/user.helper';
+import { Content, ThreadDetails } from '@/common/interfaces/thread.interface';
 import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ProcessingSparkleIcon } from '@/components/ui/processing-sparkle-icon';
 import appConfig from '@/config/app.config';
-import { ContentType } from '@/enums/content.enum';
-import { PageRoute } from '@/enums/pageRoute.enum';
-import { getContentTypeLabel } from '@/helpers/content.helper';
-import { getUser } from '@/helpers/user.helper';
-import { Content, ThreadDetails } from '@/types/thread.interface';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -40,12 +40,10 @@ export default function ContentDetailsPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const user = getUser();
-    const [messages, setMessages] = useState([]);
     const [connected, setConnected] = useState(false);
 
     useEffect(() => {
         const url = `${appConfig.ACS_Endpoint}/sse/stream?userId=${encodeURIComponent(user?._id || '')}`;
-        // send access token in the headers
         const es = new EventSource(url);
 
         es.onopen = () => {
@@ -70,7 +68,6 @@ export default function ContentDetailsPage() {
                     })
 
                     if (!contentId || !contentStatus || !generatedContent) {
-                        // Handle error if any required field is missing
                         console.warn("SSE message missing required fields", parsedContent);
                         return;
                     }
@@ -78,10 +75,8 @@ export default function ContentDetailsPage() {
                     setContents(prevContents => {
                         const contentIndex = prevContents.findIndex(c => c._id === contentId);
                         if (contentIndex === -1) {
-                            // Optionally, handle if the content does not exist (e.g., push new or do nothing)
                             return prevContents;
                         }
-                        // Create a shallow copy and update the relevant content
                         const updatedContents = [...prevContents];
                         updatedContents[contentIndex] = {
                             ...updatedContents[contentIndex],
@@ -101,8 +96,6 @@ export default function ContentDetailsPage() {
 
         es.onerror = (err) => {
             console.error('SSE error', err);
-            // Optionally close on fatal errors:
-            // es.close();
             setConnected(false);
         };
 
