@@ -185,7 +185,8 @@ export default function ContentDetailsPage() {
             const response = await contentApi.generateContent(payload);
 
             if (isNewContent) {
-                toast.success('Content generated successfully');
+                toast.success('Sent generating request..');
+                setPrompt('');
                 router.push(`${PageRoute.CONTENT_DETAILS}?id=${response._id}`);
             } else {
                 if (response.lastContent) {
