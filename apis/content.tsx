@@ -1,5 +1,5 @@
 import axiosInstance from '@/lib/axios';
-import { Thread } from '@/types/thread.interface';
+import { Thread } from '@/common/interfaces/thread.interface';
 
 export const contentEndpoints = {
     generateContent: '/content/generate',
@@ -25,9 +25,6 @@ export interface SSEStreamMessage {
     };
 }
 
-/**
- * Build SSE URL with query parameters for content generation streaming
- */
 export const buildSSEUrl = (data: GenerateContentRequest): string => {
     const params = new URLSearchParams({
         prompt: data.prompt,
@@ -38,16 +35,10 @@ export const buildSSEUrl = (data: GenerateContentRequest): string => {
 };
 
 export const contentApi = {
-    /**
-     * Legacy method - generates content synchronously (kept for backward compatibility)
-     */
     generateContent: async (data: GenerateContentRequest): Promise<Thread> => {
         const response = await axiosInstance.post<Thread>(contentEndpoints.generateContent, data);
         return response.data;
     },
 
-    /**
-     * Build SSE URL for streaming content generation
-     */
     buildStreamUrl: buildSSEUrl,
 };

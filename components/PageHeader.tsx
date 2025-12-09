@@ -1,6 +1,6 @@
 'use client';
 
-import { getUser, removeUser } from '@/helpers/user.helper';
+import { getUser, removeUser } from '@/common/helpers/user.helper';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 

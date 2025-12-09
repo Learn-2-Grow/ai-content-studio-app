@@ -1,11 +1,11 @@
 'use client';
 
-import { authApi } from '@/Apis/auth';
+import { authApi } from '@/apis/auth';
+import { PageRoute } from '@/common/enums/pageRoute.enum';
+import { setUser } from '@/common/helpers/user.helper';
+import { LoginResponse } from '@/common/interfaces/login.interface';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PageRoute } from '@/enums/pageRoute.enum';
-import { setUser } from '@/helpers/user.helper';
-import { LoginResponse } from '@/types/login.types';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -21,10 +21,11 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState<{ email?: string; password?: string; api?: string }>({});
     const router = useRouter();
+
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value?.trim() }));
-        // Clear error when user starts typing
         if (errors[name as keyof typeof errors]) {
             setErrors((prev) => ({ ...prev, [name]: undefined }));
         }

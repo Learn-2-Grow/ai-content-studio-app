@@ -6,13 +6,11 @@ const axiosInstance = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 10000, // 10 seconds
+    timeout: 10000,
 });
 
-// Request interceptor
 axiosInstance.interceptors.request.use(
     (config) => {
-        // Add auth token if available
         if (typeof window !== 'undefined') {
             const accessToken = localStorage.getItem('accessToken');
             if (accessToken) {
@@ -31,20 +29,16 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     (error) => {
-        // Handle different types of errors
         let errorMessage = 'An unexpected error occurred';
 
         if (error.response) {
-            // Server responded with error status
             const status = error.response.status;
             const data = error.response.data;
 
             errorMessage = data?.message || data?.error || `Server error (${status})`;
 
-            // Handle specific status codes
             if (status === 401) {
                 errorMessage = 'Unauthorized. Please login again.';
-                // Optionally clear token and redirect to login
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('accessToken');
                 }
@@ -62,11 +56,9 @@ axiosInstance.interceptors.response.use(
                 url: error.config?.url,
             });
 
-            // Attach user-friendly message to error
             error.userMessage = errorMessage;
 
         } else if (error.request) {
-            // Request was made but no response received
             if (error.code === 'ECONNABORTED') {
                 errorMessage = 'Request timeout. Please check your connection and try again.';
             } else if (error.code === 'ERR_NETWORK') {
@@ -81,17 +73,14 @@ axiosInstance.interceptors.response.use(
                 url: error.config?.url,
             });
 
-            // Attach user-friendly message to error
             error.userMessage = errorMessage;
 
         } else {
-            // Error setting up the request
             errorMessage = error.message || 'An unexpected error occurred';
             console.error('Request Setup Error:', error.message);
             error.userMessage = errorMessage;
         }
 
-        // Return a normalized error object
         return Promise.reject({
             ...error,
             message: errorMessage,

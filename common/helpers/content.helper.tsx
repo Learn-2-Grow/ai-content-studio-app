@@ -1,4 +1,4 @@
-import { ContentType, ThreadStatus } from '@/enums/content.enum';
+import { ContentType, ThreadStatus } from '@/common/enums/content.enum';
 
 export const getContentTypeLabel = (type: string): string => {
     const typeLabels: Record<string, string> = {
