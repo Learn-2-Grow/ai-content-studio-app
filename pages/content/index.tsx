@@ -1,12 +1,14 @@
 'use client';
 
-import { contentApi } from '@/apis/content';
+import { contentApi, GenerateContentRequest } from '@/apis/content';
 import { threadsApi } from '@/apis/threads';
 import { ContentType } from '@/common/enums/content.enum';
 import { PageRoute } from '@/common/enums/pageRoute.enum';
+import { SentimentType } from '@/common/enums/sentimentType.enum';
 import { getContentTypeLabel } from '@/common/helpers/content.helper';
 import { getUser } from '@/common/helpers/user.helper';
 import { Content, ThreadDetails } from '@/common/interfaces/thread.interface';
+import ContentSentiment from '@/components/ContentSentiment';
 import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ProcessingSparkleIcon } from '@/components/ui/processing-sparkle-icon';
@@ -144,24 +146,43 @@ export default function ContentDetailsPage() {
         }
     };
 
-    const handleGenerate = async () => {
-        if (!prompt.trim()) {
+    const handleGenerate = async (
+        obj?: {
+            sentiment: SentimentType | null
+            prompt: string
+            contentType: ContentType
+            threadId: string,
+            regenerate: boolean
+        }
+    ) => {
+
+        console.log("obj", obj);
+
+
+        if (!prompt.trim() && !obj?.regenerate) {
             toast.error('Please enter a prompt');
             return;
         }
 
-        if (isNewContent && !contentType) {
+        if (isNewContent && !contentType && !obj?.regenerate) {
             toast.error('Please select a content type');
             return;
         }
 
         try {
             setGenerating(true);
-            const response = await contentApi.generateContent({
+            const payload: GenerateContentRequest = {
                 prompt: prompt.trim(),
                 contentType: isNewContent ? contentType : threadDetails?.type || 'blog_post',
                 threadId: isNewContent ? null : threadId,
-            });
+            }
+            if (obj?.regenerate) {
+                payload.sentiment = obj.sentiment as SentimentType;
+                payload.prompt = obj.prompt;
+                payload.contentType = obj.contentType;
+                payload.threadId = obj.threadId;
+            }
+            const response = await contentApi.generateContent(payload);
 
             if (isNewContent) {
                 toast.success('Content generated successfully');
@@ -240,32 +261,45 @@ export default function ContentDetailsPage() {
                         </div>
                     )}
 
-                    {contents.map((content) => (
-                        <div key={content._id} className="mb-8">
-                            <div className="flex justify-end mb-4">
-                                <div className="max-w-[85%]">
-                                    <div className="bg-gray-200 rounded-2xl px-4 py-3">
-                                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{content.prompt}</p>
+                    {contents.map((content, index) => {
+                        const isLatestContent = index === contents.length - 1;
+
+                        return (
+                            <div key={content._id} className="mb-8">
+                                <div className="flex justify-end mb-4">
+                                    <div className="max-w-[85%]">
+                                        <div className="bg-gray-200 rounded-2xl px-4 py-3">
+                                            <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{content.prompt}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-start">
+                                    <div className="max-w-[85%]">
+                                        {content.generatedContent ? (
+                                            <>
+                                                <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                                                    {content.generatedContent}
+                                                </p>
+                                                <ContentSentiment
+                                                    content={content}
+                                                    threadDetails={threadDetails as ThreadDetails || null}
+                                                    isLastContent={isLatestContent}
+                                                    onCreateContent={handleGenerate}
+
+                                                />
+                                            </>
+                                        ) : (
+                                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                                                <ProcessingSparkleIcon className="w-4 h-4" color="#9ca3af" />
+                                                <span>Generating...</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="flex justify-start">
-                                <div className="max-w-[85%]">
-                                    {content.generatedContent ? (
-                                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                                            {content.generatedContent}
-                                        </p>
-                                    ) : (
-                                        <div className="flex items-center gap-2 text-gray-400 text-sm">
-                                            <ProcessingSparkleIcon className="w-4 h-4" color="#9ca3af" />
-                                            <span>Generating...</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
 
                     {generating && (
                         <div className="mb-8">
@@ -310,7 +344,7 @@ export default function ContentDetailsPage() {
                             />
                         </div>
                         <Button
-                            onClick={handleGenerate}
+                            onClick={() => handleGenerate(undefined)}
                             disabled={generating || !prompt.trim()}
                             size="sm"
                             className="h-10 w-10 rounded-lg flex items-center justify-center p-0 flex-shrink-0"
